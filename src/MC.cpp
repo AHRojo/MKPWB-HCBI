@@ -83,16 +83,15 @@ void solucionRandom() {
 }
 
 float calidadSolucion() {
-
+    return .3;
 }
 
 float calcularDistancia(Nodo a, Nodo b) {
     float i = a.x - b.x;
     float j = a.y - b.y;
-    i = i*i;
-    j = j*j;
+    i = pow(i, 2);
+    j = pow(j, 2);
     return sqrt(i+j);
-
 }
 
 int main(int argc, char* argv[]) {
@@ -103,6 +102,6 @@ int main(int argc, char* argv[]) {
 
     readFile(argv[1]);
     solucionRandom();
-    
+
     return 0;
 }
