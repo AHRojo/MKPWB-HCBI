@@ -9,3 +9,7 @@ Leche::Leche(int cuota, char tipo) {
 void Leche::setValor(float valor) {
     this->valor = valor;
 }
+
+void Leche::recolectar(int i) {
+    this->recolectado += i;
+}

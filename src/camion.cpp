@@ -3,4 +3,5 @@
 
 Camion::Camion(int capacidad) {
     this->capacidad = capacidad;
+    this->volumenActual = 0;
 };

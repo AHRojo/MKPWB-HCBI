@@ -4,6 +4,7 @@
 class Camion {
     public:
         int capacidad;
+        int volumenActual;
 
         Camion(int capacidad);
 };
