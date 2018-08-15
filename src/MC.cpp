@@ -185,16 +185,23 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion) {
     int calidad_solucion = 0;
     for ( int i = 0; i < totalCamiones; i++ ) {
         //std::cout << " PARA CAMION " << i << "\n\n\n";
+        int lecheRecolectada = 0;
         int index = 0;
         int cantidadNodos = solucion[i].size();
         calidad_solucion -= calcularDistancia(planta[0], solucion[i][index]);
         while ( index != cantidadNodos - 1 ) {
             calidad_solucion += solucion[i][index].cantidad * leches[i].valor - calcularDistancia(solucion[i][index],solucion[i][index + 1]);
+            lecheRecolectada += solucion[i][index].cantidad;
             // std::cout << "DESDE NODO " << solucion[i][index].id << " HASTA " << solucion[i][index + 1].id << "\n";
             // std::cout << solucion[i][index].cantidad * leches[i].valor << "     " << calcularDistancia(solucion[i][index], solucion[i][index + 1]) << "\n\n";
             index++;
         }
         calidad_solucion += solucion[i][index].cantidad * leches[i].valor - calcularDistancia(solucion[i][index], planta[0]);
+        lecheRecolectada += solucion[i][index].cantidad;
+
+        if ( lecheRecolectada < leches[i].cuota ) {
+            calidad_solucion -= (leches[i].cuota - lecheRecolectada) * leches[i].valor;
+        }
     }
     //std::cout << "CALIDAD " << calidad_solucion << "\n";
     return calidad_solucion;
@@ -223,7 +230,6 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     float solcandidata;
     float solActual = calidad_mejor_solucion;
     float sol2opt;
-    int contador = 0;
     for ( int i = 0; i < 3; i++ ) {
         int flag = 1;
         int cantidadNodos = solucion[i].size();
@@ -233,29 +239,33 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                 for ( int k = j; k < cantidadNodos; k++ ) {
                     std::vector<std::vector<Nodo>> vecino = dosOpt(i, j, k, solucion);
                     solcandidata = calidadSolucion(vecino);
+                    std::cout << solcandidata << "\n";
                     if ( solcandidata > solActual ) {
                         solActual = solcandidata;
                         candidato = vecino;
                         change = 1;
-                        contador += 1;
                     }
                 }
             }
-            std::cout << solActual << "\n";
             solucion = candidato;
             if ( change == 0 ) {
                 flag = 0;
             }
         }
     }
-    std::cout << contador << "\n";
     if ( solActual > calidad_mejor_solucion ) {
         calidad_mejor_solucion = solActual;
+        std::cout << "MEJOR SOLUCION: " << calidad_mejor_solucion << "\n\n\n";
     }
     return solucion;
 }
 
 std::vector<std::vector<Nodo>> restart(std::vector<std::vector<Nodo>> solucion) {
+    for ( int i = 0; i < 3; i++ ) {
+        std::vector<Nodo> ruta;
+        std::random_shuffle ( ruta.begin(), ruta.end() );
+        solucion[i] = ruta;
+    }
     return solucion;
 }
 
@@ -276,9 +286,11 @@ int main(int argc, char* argv[]) {
     std::cout << calidad_mejor_solucion << "\n";
 
 
-    // for ( int i = 0; i < 1000; i++) {
-    //     nueva_sol = restart(nueva_sol);
-    // }
+    for ( int t = 0; t < 10; t++) {
+        nueva_sol = restart(nueva_sol);
+        mejorSolucion = HCBI(nueva_sol);
+        std::cout << calidad_mejor_solucion << "\n";
+    }
     // for ( i = 0; i < 3; i++ ) {
     //     int alo = solucionInicial[i].size();
     //     std::cout << "Camion" << i << "\n";
