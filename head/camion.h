@@ -4,7 +4,7 @@
 class Camion {
     public:
         int capacidad;
-        int volumenActual;
+        int disponible;
 
         Camion(int capacidad);
 };
