@@ -83,7 +83,7 @@ float calcularDistancia(Nodo a, Nodo b) {
 int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<std::vector<Nodo>> porTipo) {
     int i;
     int cantidadNodos = porTipo[zona].size();
-    float dist = std::numeric_limits<float>::infinity();;
+    float dist = std::numeric_limits<float>::infinity();
     int index;
     for ( i = 0; i < cantidadNodos; i++ ) {
         float actual = calcularDistancia(a, porTipo[zona][i]);
@@ -95,6 +95,16 @@ int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<std::vector<Nodo>> porTi
     }
 
     return index;
+}
+
+//i es el camion que se esta evaluando
+int calcularDeficit(int i, std::vector<std::vector<Nodo>> solucion) {
+    int n = solucion[i].size();
+    int total = 0;
+    for ( int j = 0; j < n; j++ ) {
+        total += solucion[i][j].cantidad;
+    }
+    return leches[i].cuota - total;
 }
 
 void solucionRandom() {
@@ -139,33 +149,72 @@ void solucionRandom() {
             porTipo[i].erase(porTipo[i].begin() + indexMasCercano);
         }
     }
+
+    //SE agregan los nodos sobrantes
     int nodosSobrantes = porTipo[3].size();
     for ( i = 0; i < nodosSobrantes; i++ ) {
         if ( porTipo[3][i].tipo == 'A' ) {
             if ( camiones[0].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[0].push_back(porTipo[3][i]);
+                solucionInicial[0].insert(solucionInicial[0].begin(), porTipo[3][i]);
             }
             else if ( camiones[1].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[1].push_back(porTipo[3][i]);
+                solucionInicial[1].insert(solucionInicial[1].begin(), porTipo[3][i]);
             }
             else {
-                solucionInicial[2].push_back(porTipo[3][i]);
+                solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
             }
         }
         else if ( porTipo[3][i].tipo == 'B' ) {
             if ( camiones[1].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[1].push_back(porTipo[3][i]);
+                solucionInicial[1].insert(solucionInicial[1].begin(), porTipo[3][i]);
             }
             else {
-                solucionInicial[2].push_back(porTipo[3][i]);
+                solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
             }
         }
         else {
-            solucionInicial[2].push_back(porTipo[3][i]);
+            solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
         }
     }
+    std::cout << calcularDeficit(0, solucionInicial) << "\n";
+    std::cout << calcularDeficit(1, solucionInicial) << "\n";
+    std::cout << calcularDeficit(2, solucionInicial) << "\n";
+    std::cout << "\n\n";
+    //Se solucionan los problemas de Deficit
 
-
+    /***
+    ARREGLAR ESTA WEA!
+    for ( i = 0; i < totalCamiones; i++ ) {
+        if ( calcularDeficit(i, solucionInicial) > 0 ) {
+            if ( i == 1 ) {
+                for ( int j = solucionInicial[0].size() - 1; j >= 0; j-- ) {
+                    if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) > 0) {
+                        solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[0][j]);
+                        solucionInicial[0].erase(solucionInicial[0].begin() + j);
+                    }
+                }
+            }
+            else if ( i == 2 ) {
+                for ( int j = solucionInicial[1].size() - 1; j >= 0; j-- ) {
+                    if ( (calcularDeficit(1, solucionInicial) + solucionInicial[1][j].cantidad) > 0) {
+                        solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[1][j]);
+                        solucionInicial[1].erase(solucionInicial[1].begin() + j);
+                    }
+                }
+                for ( int j = solucionInicial[0].size() - 1; j >= 0; j-- ) {
+                    if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) > 0) {
+                        solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[0][j]);
+                        solucionInicial[0].erase(solucionInicial[0].begin() + j);
+                    }
+                }
+            }
+        }
+    }
+    ***/
+    std::cout << calcularDeficit(0, solucionInicial) << "\n";
+    std::cout << calcularDeficit(1, solucionInicial) << "\n";
+    std::cout << calcularDeficit(2, solucionInicial) << "\n";
+    std::cout << "\n\n";
 }
 
 void verCuotas() {
@@ -201,7 +250,8 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion) {
 
         if ( lecheRecolectada < leches[i].cuota ) {
             //std::cout << "Deficit " << leches[i].tipo << " " << leches[i].cuota - lecheRecolectada << "\n";
-            calidad_solucion -= (leches[i].cuota - lecheRecolectada) * leches[i].valor;
+            // calidad_solucion -= (leches[i].cuota - lecheRecolectada) * leches[i].valor;
+            return -std::numeric_limits<float>::infinity();
         }
     }
     //std::cout << "CALIDAD " << calidad_solucion << "\n";
@@ -316,11 +366,11 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < 3; i++ ) {
         int alo = nueva_sol[i].size();
-        std::cout << "Camion" << i << "\n";
+        // std::cout << "Camion" << i << "\n";
         for( int j = 0; j < alo; j++) {
             nueva_sol[i][j].toString();
         }
-        std::cout << "\n\n";
+        // std::cout << "\n\n";
     }
 
     std::cout << calidad_mejor_solucion << "\n";
@@ -329,11 +379,11 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < 3; i++ ) {
         int alo = mejorSolucion[i].size();
-        std::cout << "Camion" << i << "\n";
+        // std::cout << "Camion" << i << "\n";
         for( int j = 0; j < alo; j++) {
-            mejorSolucion[i][j].toString();
+            // mejorSolucion[i][j].toString();
         }
-        std::cout << "\n\n";
+        // std::cout << "\n\n";
     }
     // for ( i = 0; i < 3; i++ ) {
     //     int alo = solucionInicial[i].size();

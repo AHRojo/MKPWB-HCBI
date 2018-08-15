@@ -13,6 +13,6 @@ int main() {
     numeros.push_back(3);
     numeros.push_back(20);
 
-    numeros.insert(numeros[1], 33);
-    std::cout << numeros[1] << "\n";
+    numeros.insert(numeros.begin(), 33);
+    std::cout << numeros[0] << "\n";
 }
