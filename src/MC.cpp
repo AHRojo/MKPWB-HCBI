@@ -200,13 +200,14 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion) {
         lecheRecolectada += solucion[i][index].cantidad;
 
         if ( lecheRecolectada < leches[i].cuota ) {
+            //std::cout << "Deficit " << leches[i].tipo << " " << leches[i].cuota - lecheRecolectada << "\n";
             calidad_solucion -= (leches[i].cuota - lecheRecolectada) * leches[i].valor;
         }
     }
     //std::cout << "CALIDAD " << calidad_solucion << "\n";
     return calidad_solucion;
 }
-
+// recorrido en el que estoy, a, b arcos que voy a cambiar y el recorrido.
 std::vector<std::vector<Nodo>> dosOpt(int i, int a, int b, std::vector<std::vector<Nodo>> recorrido) {
     //std::reverse(recorrido[i][a], recorrido[i][b]);
     std::vector<Nodo> cambio;
@@ -225,6 +226,7 @@ std::vector<std::vector<Nodo>> dosOpt(int i, int a, int b, std::vector<std::vect
     return recorrido;
 }
 
+// parametros recorrido en el que estoy, recorrido al que le voy a robar, posicion en la que voy a agregar, posicion a la que le voy a robar, y la representacion.
 std::vector<std::vector<Nodo>> swapCamiones(int i, int j, int a, int b, std::vector<std::vector<Nodo>> recorrido) {
     recorrido[i].insert(recorrido[i].begin() + a, recorrido[j][b]);
     recorrido[j].erase(recorrido[j].begin() + b);
@@ -245,28 +247,38 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                     for ( int k = j; k < cantidadNodos; k++ ) {
                         std::vector<std::vector<Nodo>> vecino = dosOpt(i, j, k, solucion);
                         solcandidata = calidadSolucion(vecino);
-                        std::cout << solcandidata << "\n";
                         if ( solcandidata > solActual ) {
                             solActual = solcandidata;
                             candidato = vecino;
                             change = 1;
                         }
                     }
-                    //ACA VA EL SWAP ENTRE camiones
-                    for ( int j = 0; j < i; j++ ) {
-                        int cantidadNodosOtros = solucion[j].size();
-                        for ( int k = 0; k < cantidadNodos; k++ ) {
-                            for ( int l = 0; l < cantidadNodosOtros; l++ ) {
-                                std::vector<std::vector<Nodo>> vecino = swapCamiones(i, j, k, l, solucion);
-                                solcandidata = calidadSolucion(vecino);
-                                if ( solcandidata > solActual ) {
-                                    solActual = solcandidata;
-                                    candidato = vecino;
-                                    change = 1;
-                                }
+                    for ( int k = 0; k < i; k++) {
+                        int cantidadNodosOtros = solucion[k].size();
+                        for ( int l = 0; l < cantidadNodosOtros; l++ ) {
+                            std::vector<std::vector<Nodo>> vecino = swapCamiones(i, k, j, l, solucion);
+                            if ( solcandidata > solActual ) {
+                                solActual = solcandidata;
+                                candidato = vecino;
+                                change = 1;
                             }
                         }
                     }
+                    //ACA VA EL SWAP ENTRE camiones
+                    // for ( int j = 0; j < i; j++ ) {
+                    //     int cantidadNodosOtros = solucion[j].size();
+                    //     for ( int k = 0; k < cantidadNodos; k++ ) {
+                    //         for ( int l = 0; l < cantidadNodosOtros; l++ ) {
+                    //             std::vector<std::vector<Nodo>> vecino = swapCamiones(i, j, k, l, solucion);
+                    //             solcandidata = calidadSolucion(vecino);
+                    //             if ( solcandidata > solActual ) {
+                    //                 solActual = solcandidata;
+                    //                 candidato = vecino;
+                    //                 change = 1;
+                    //             }
+                    //         }
+                    //     }
+                    // }
                 }
             }
         solucion = candidato;
@@ -302,15 +314,26 @@ int main(int argc, char* argv[]) {
     calidad_mejor_solucion = calidadSolucion(solucionInicial);
     std::vector<std::vector<Nodo>> nueva_sol = solucionInicial;
 
+    for (int i = 0; i < 3; i++ ) {
+        int alo = nueva_sol[i].size();
+        std::cout << "Camion" << i << "\n";
+        for( int j = 0; j < alo; j++) {
+            nueva_sol[i][j].toString();
+        }
+        std::cout << "\n\n";
+    }
+
     std::cout << calidad_mejor_solucion << "\n";
     mejorSolucion = HCBI(nueva_sol);
     std::cout << calidad_mejor_solucion << "\n";
 
-
-    for ( int t = 0; t < 10; t++) {
-        nueva_sol = restart(nueva_sol);
-        mejorSolucion = HCBI(nueva_sol);
-        std::cout << calidad_mejor_solucion << "\n";
+    for (int i = 0; i < 3; i++ ) {
+        int alo = mejorSolucion[i].size();
+        std::cout << "Camion" << i << "\n";
+        for( int j = 0; j < alo; j++) {
+            mejorSolucion[i][j].toString();
+        }
+        std::cout << "\n\n";
     }
     // for ( i = 0; i < 3; i++ ) {
     //     int alo = solucionInicial[i].size();
