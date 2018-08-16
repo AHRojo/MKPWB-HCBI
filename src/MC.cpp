@@ -6,6 +6,7 @@
 #include <map>
 #include <algorithm>
 #include <limits>
+#include <ctime>
 
 #include "nodo.h"
 #include "camion.h"
@@ -19,6 +20,8 @@ std::vector<Leche> leches;
 std::vector<std::vector<Nodo>> mejorSolucion;
 std::vector<std::vector<Nodo>> solucionInicial;
 int totalCamiones;
+int sol;
+std::vector<Camion> iniciales;
 
 // Se lee el archivo y se guardan los datos sobre camiones, nodos y leche en variables globales.
 void readFile(std::string arch) {
@@ -38,6 +41,7 @@ void readFile(std::string arch) {
         camiones.push_back(camioncito);
         i++;
     }
+    iniciales = camiones;
     i = 0;
     file >> word;
     n = std::stoi(word);
@@ -89,9 +93,9 @@ float calcularDistancia(Nodo a, Nodo b) {
 //Se calcula el ratio Leche/Distancia entre 2 nodos para determinar cual agregar a la solucion greedy
 int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<std::vector<Nodo>> porTipo) {
     int i;
-    int cantidadNodos = porTipo[zona].size();
+    int cantidadNodos = (int) porTipo[zona].size();
     float dist = std::numeric_limits<float>::infinity();
-    int index;
+    int index = 0;
     for ( i = 0; i < cantidadNodos; i++ ) {
         float actual = calcularDistancia(a, porTipo[zona][i]);
         if ( actual > dist ) {
@@ -107,7 +111,7 @@ int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<std::vector<Nodo>> porTi
 //Se utiliza para determinar si existe un deficit de leche en algun camion
 //para cumplir la cuota, si entrega un numero negativo quiere decir que hay de sobra.
 int calcularDeficit(int i, std::vector<std::vector<Nodo>> solucion) {
-    int n = solucion[i].size();
+    int n = (int) solucion[i].size();
     int total = 0;
     for ( int j = 0; j < n; j++ ) {
         total += solucion[i][j].cantidad;
@@ -116,7 +120,7 @@ int calcularDeficit(int i, std::vector<std::vector<Nodo>> solucion) {
 }
 
 void solucionRandom() {
-    int cantidadNodos = nodos.size();
+    int cantidadNodos = (int) nodos.size();
     solucionInicial.clear();
     for ( int i = 0; i < totalCamiones; i++ ) {
         std::vector<Nodo> lista;
@@ -161,7 +165,7 @@ superior.
 void solucionGreedy() {
     std::vector<std::vector<Nodo>> porTipo;
     int i;
-    int cantidadNodos = nodos.size();
+    int cantidadNodos = (int) nodos.size();
     solucionInicial.clear();
 
     for ( i = 0; i < totalCamiones + 1; i++ ) {
@@ -189,7 +193,7 @@ void solucionGreedy() {
     for ( i = 0; i < totalCamiones; i++ ) {
         int indexMasCercano;
         Nodo actual = planta[0];
-        while ( porTipo[i].size() != 0 && camiones[i].disponible > 0 ) {
+        while ( (int) porTipo[i].size() != 0 && camiones[i].disponible > 0 ) {
             indexMasCercano = vecinoMasCercanoRatio(actual, i, porTipo);
             if ( camiones[i].disponible > porTipo[i][indexMasCercano].cantidad ) {
                 solucionInicial[i].push_back(porTipo[i][indexMasCercano]);
@@ -204,7 +208,7 @@ void solucionGreedy() {
     }
 
     //SE agregan los nodos sobrantes
-    int nodosSobrantes = porTipo[3].size();
+    int nodosSobrantes = (int) porTipo[3].size();
     for ( i = 0; i < nodosSobrantes; i++ ) {
         if ( porTipo[3][i].tipo == 'A' ) {
             if ( camiones[0].disponible > porTipo[3][i].cantidad ) {
@@ -245,7 +249,7 @@ void solucionGreedy() {
     for ( i = 0; i < totalCamiones; i++ ) {
         if ( calcularDeficit(i, solucionInicial) > 0 ) {
             if ( i == 1 ) {
-                for ( int j = solucionInicial[0].size() - 1; j >= 0; j-- ) {
+                for ( int j = (int) solucionInicial[0].size() - 1; j >= 0; j-- ) {
                     if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) < 0) {
                         if ( camiones[1].disponible > solucionInicial[0][j].cantidad ) {
                             camiones[1].disponible -= solucionInicial[0][j].cantidad;
@@ -257,7 +261,7 @@ void solucionGreedy() {
                 }
             }
             else if ( i == 2 ) {
-                for ( int j = solucionInicial[1].size() - 1; j >= 0; j-- ) {
+                for ( int j = (int) solucionInicial[1].size() - 1; j >= 0; j-- ) {
                     if ( (calcularDeficit(1, solucionInicial) + solucionInicial[1][j].cantidad) < 0) {
                         if ( camiones[2].disponible > solucionInicial[1][j].cantidad ) {
                             camiones[2].disponible -= solucionInicial[1][j].cantidad;
@@ -268,7 +272,7 @@ void solucionGreedy() {
 
                     }
                 }
-                for ( int j = solucionInicial[0].size() - 1; j >= 0; j-- ) {
+                for ( int j = (int) solucionInicial[0].size() - 1; j >= 0; j-- ) {
                     if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) < 0) {
                         if ( camiones[2].disponible > solucionInicial[0][j].cantidad ) {
                             camiones[2].disponible -= solucionInicial[0][j].cantidad;
@@ -292,41 +296,29 @@ a Sum(Leche*calidad) - Sum(Distancia de nodo a nodo), en caso de que haya Defici
 se entrega una calidad infinitamente negativa.
 */
 
-float determinarCalidad(Nodo a) {
-    if ( a.tipo == 'A' ) {
-        return 1.0;
-    }
-    if ( a.tipo == 'B' ) {
-        return 0.7;
-    }
-    return 0.3;
-}
-
 float calidadSolucion(std::vector<std::vector<Nodo>> solucion, std::vector<Camion> trucks) {
-    int calidad_solucion = 0;
+    float calidad_solucion = 0;
     for ( int i = 0; i < totalCamiones; i++ ) {
-        int lecheRecolectada = 0;
+        float lecheRecolectada = 0;
         int index = 0;
-        int cantidadNodos = solucion[i].size();
+        int cantidadNodos = (int) solucion[i].size();
         if ( cantidadNodos > 0) {
             calidad_solucion -= calcularDistancia(planta[0], solucion[i][index]);
             while ( index != cantidadNodos - 1 ) {
-                calidad_solucion += solucion[i][index].cantidad * leches[i].valor - calcularDistancia(solucion[i][index],solucion[i][index + 1]);
-                lecheRecolectada += solucion[i][index].cantidad;
+                calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index],solucion[i][index + 1]);
+                lecheRecolectada += (float) solucion[i][index].cantidad;
                 index++;
             }
-            calidad_solucion += solucion[i][index].cantidad * leches[i].valor - calcularDistancia(solucion[i][index], planta[0]);
-            lecheRecolectada += solucion[i][index].cantidad;
+            calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index], planta[0]);
+            lecheRecolectada += (float) solucion[i][index].cantidad;
         }
-        if ( lecheRecolectada < leches[i].cuota ) {
-            std::cout << "POCA LECHE\n";
-            return -std::numeric_limits<float>::infinity();
-            //calidad_solucion -= (lecheRecolectada - leches[i].cuota)*5;
+        if ( lecheRecolectada < (float) leches[i].cuota ) {
+            //return -std::numeric_limits<float>::infinity();
+            calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*100;
         }
-        else if ( lecheRecolectada > trucks[i].capacidad ) {
-            std::cout << "SUPERA CAP\n";
-            return -std::numeric_limits<float>::infinity();
-            //calidad_solucion += ( trucks[i].capacidad - lecheRecolectada)*leches[i].valor*5;
+        else if ( lecheRecolectada > (float) trucks[i].capacidad ) {
+            //return -std::numeric_limits<float>::infinity();
+            calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*100;
         }
     }
     return calidad_solucion;
@@ -337,7 +329,7 @@ std::vector<std::vector<Nodo>> dosOpt(int i, int a, int b, std::vector<std::vect
     //std::reverse(recorrido[i][a], recorrido[i][b]);
     std::vector<Nodo> cambio;
     int c;
-    int cantidadNodos = recorrido[i].size();
+    int cantidadNodos = (int) recorrido[i].size();
     for ( c = 0; c < a; c++ ) {
         cambio.push_back(recorrido[i][c]);
     }
@@ -357,9 +349,11 @@ La funcion toma un nodo de otro camion que lleve calidad mayor y la agrega en
 una posicion a del vector que solicita nodos.
 */
 std::vector<std::vector<Nodo>> takeNode(int i, int j, int a, int b, std::vector<std::vector<Nodo>> recorrido) {
-    recorrido[i].insert(recorrido[i].begin() + a, recorrido[j][b]);
-    recorrido[j].erase(recorrido[j].begin() + b);
-
+    std::vector<Nodo>::iterator it = recorrido[i].begin();
+    std::vector<Nodo>::iterator ot = recorrido[j].begin();
+    Nodo node = recorrido[j][b];
+    it = recorrido[i].insert(it + a, node);
+    ot = recorrido[j].erase(ot + b);
     return recorrido;
 }
 
@@ -391,7 +385,7 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     while ( flag == 1 ) {
         int change = 0;
         for ( int i = 0; i < 3; i++ ) {
-            int cantidadNodos = solucion[i].size();
+            int cantidadNodos = (int) solucion[i].size();
                 for ( int j = 0; j < cantidadNodos; j++ ) {
                     for ( int k = j; k < cantidadNodos; k++ ) {
                         std::vector<std::vector<Nodo>> vecino = dosOpt(i, j, k, solucion);
@@ -403,7 +397,7 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                         }
                     }
                     for ( int k = 0; k < totalCamiones; k++) {
-                        int cantidadNodosOtros = solucion[k].size();
+                        int cantidadNodosOtros = (int) solucion[k].size();
                         if ( i != k ) {
                             for ( int l = 0; l < cantidadNodosOtros; l++ ) {
                                 if ( permitirSwap (solucion[i][j], solucion[k][l]) == 1 ) {
@@ -438,8 +432,9 @@ void resetCamiones() {
 }
 
 void output(std::string s) {
-    int index = s.find(".txt", index);
-    s.replace(index, 4, ".out");
+    int asd = 0;
+    asd = (int) s.find(".txt", asd);
+    s.replace(asd, 4, ".out");
     std::ofstream file(s, std::ofstream::out);
     if (!file.good()){
         std::cout << "No se pudo crear el archivo.";
@@ -449,34 +444,53 @@ void output(std::string s) {
     //Costo total
     std::vector<std::string> rutas;
     std::vector<float> costoViaje;
-    std::vector<int> cantidadLeche;
+    std::vector<float> cantidadLeche;
     for ( int i = 0; i < totalCamiones; i++ ) {
-        rutas.push_back("0-");
+        rutas.push_back("1-");
         costoViaje.push_back(0);
         cantidadLeche.push_back(0);
-        int cantidadNodos = mejorSolucion[i].size();
+        int cantidadNodos = (int) mejorSolucion[i].size();
         if (cantidadNodos != 0) {
             costoViaje[i] += calcularDistancia(planta[0], mejorSolucion[i][0]);
         }
         int index = 0;
         while ( index != cantidadNodos - 1 && cantidadNodos != 0 ) {
             rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-";
-            cantidadLeche[i] += mejorSolucion[i][index].cantidad;
+            cantidadLeche[i] += (float) mejorSolucion[i][index].cantidad;
             costoViaje[i] += calcularDistancia(mejorSolucion[i][index], mejorSolucion[i][index]);
             index++;
         }
-        rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-0";
-        cantidadLeche[i] += mejorSolucion[i][index].cantidad;
+        rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-1";
+        cantidadLeche[i] += (float) mejorSolucion[i][index].cantidad;
         costoViaje[i] += calcularDistancia(mejorSolucion[i][index], planta[0]);
     }
-    int totalLeche = 0;
+    float totalLeche = 0;
     float costoViajeT = 0;
-    for ( int i = 0; i < cantidadLeche.size(); i++ ) {
-        totalLeche += cantidadLeche[i]*leches[i].valor;
+    for ( int i = 0; i < (int) cantidadLeche.size(); i++ ) {
+        totalLeche += (float) cantidadLeche[i]*leches[i].valor;
         costoViajeT += costoViaje[i];
     }
-
     file << std::to_string(costoViajeT) << "\t" << std::to_string(totalLeche) << "\n";
+    //sort camiones
+    std::cout << rutas[0] << "\n" << rutas[1] << "\n" << rutas[2] << "\n\n";
+    for ( int i = 0; i < totalCamiones; i++ ) {
+        camionesMejorSolucion[i].disponible = camionesMejorSolucion[i].capacidad;
+        std::cout << "cAMBIE UN VALOR\n";
+        for ( int j = 0; j < totalCamiones; j++ ) {
+            std::cout << "entre al segundo for\n";
+            if ( camionesMejorSolucion[i].capacidad == iniciales[j].capacidad ) {
+                std::cout << "entre al if\n";
+                iter_swap(camionesMejorSolucion.begin() + i, camionesMejorSolucion.begin() + j);
+                std::cout << "cambie camiones de posicion\n";
+                iter_swap(rutas.begin() + i, rutas.begin() + j);
+                iter_swap(costoViaje.begin() + i, costoViaje.begin() + j);
+                iter_swap(cantidadLeche.begin() + i, cantidadLeche.begin() + j);
+                iter_swap(leches.begin() + i, leches.begin() + j);
+                break;
+            }
+        }
+    }
+    std::cout << rutas[0] << "\n" << rutas[1] << "\n" << rutas[2] << "\n";
     for (int i = 0; i < totalCamiones; i++ ) {
         file << rutas[i] << "\t" << std::to_string(costoViaje[i]) << "\t" << std::to_string(cantidadLeche[i]) << leches[i].tipo << "\n";
         }
@@ -491,24 +505,27 @@ int main(int argc, char* argv[]) {
         return -1;
         }
     std::vector<std::vector<Nodo>> candidato;
+    int r;
 
     readFile(argv[1]);
-
-    //solucionGreedy();
-    solucionRandom();
+    std::cout << "1 solucion greedy, cualquier otro solucion semi random: ";
+    std::cin >> sol;
+    if ( sol != 1 ) {
+        std::cout << "Cantidad de restarts: ";
+        std::cin >> r;
+    }
+    clock_t start_s=clock();
+    if ( sol == 1 ) {
+        solucionGreedy();
+        r = 9;
+    }
+    else {
+        solucionRandom();
+    }
     mejorSolucion = solucionInicial;
     camionesMejorSolucion = camiones;
     candidato = mejorSolucion;
-    // for ( int i = 0; i < 3; i++ ) {
-    //     int alo = solucionInicial[i].size();
-    //     std::cout << "Camion" << i << "\n";
-    //     for( int j = 0; j < alo; j++ ) {
-    //         solucionInicial[i][j].toString();
-    //     }
-    //     std::cout << "\n\n";
-    // }
-    // std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n\n";
-    for ( int r = 0; r < 20; r++ ) {
+    for ( int i = 0; i < r; i++ ) {
         candidato = HCBI(solucionInicial);
         if ( calidadSolucion(candidato, camiones) > calidadSolucion(mejorSolucion, camionesMejorSolucion) ) {
             mejorSolucion = candidato;
@@ -517,11 +534,17 @@ int main(int argc, char* argv[]) {
             }
         candidato.clear();
         resetCamiones();
-        solucionRandom();
-        //solucionGreedy();
+        if ( sol == 1 ) {
+            solucionGreedy();
+        }
+        else {
+            solucionRandom();
+        }
     }
+    int stop_s=(int) clock();
+
     for ( int i = 0; i < 3; i++ ) {
-        int alo = mejorSolucion[i].size();
+        int alo = (int) mejorSolucion[i].size();
         std::cout << "Camion" << i << "\n";
         for( int j = 0; j < alo; j++ ) {
             mejorSolucion[i][j].toString();
@@ -529,6 +552,7 @@ int main(int argc, char* argv[]) {
         std::cout << "\n\n";
     }
     std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n\n";
+    std::cout << "tiempo: " << (double)(stop_s-start_s)/double(CLOCKS_PER_SEC) << "segundos\n";
     output(argv[1]);
 
 
