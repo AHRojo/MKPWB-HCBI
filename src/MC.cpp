@@ -130,28 +130,32 @@ void solucionRandom() {
     int module;
     for ( int i = 0; i < cantidadNodos; i++ ) {
         module = i%totalCamiones;
-        int flag = 1;
-        while ( flag == 1 ) {
-            flag = 1;
-            if ( module == 0 ) {
-                if ( nodos[i].tipo == 'A' ) {
-                    solucionInicial[module].push_back(nodos[i]);
-                    flag = 0;
-                }
-            }
-            else if ( module == 1 ) {
-                if (nodos[i].tipo == 'A' || nodos[i].tipo == 'B' ) {
-                    solucionInicial[module].push_back(nodos[i]);
-                    flag = 0;
-                }
-            }
-            else {
-                solucionInicial[module].push_back(nodos[i]);
-                flag = 0;
-            }
-            module += 1;
-        }
+        solucionInicial[module].push_back(nodos[i]);
     }
+    // for ( int i = 0; i < cantidadNodos; i++ ) {
+    //     module = i%totalCamiones;
+    //     int flag = 1;
+    //     while ( flag == 1 ) {
+    //         flag = 1;
+    //         if ( module == 0 ) {
+    //             if ( nodos[i].tipo == 'A' ) {
+    //                 solucionInicial[module].push_back(nodos[i]);
+    //                 flag = 0;
+    //             }
+    //         }
+    //         else if ( module == 1 ) {
+    //             if (nodos[i].tipo == 'A' || nodos[i].tipo == 'B' ) {
+    //                 solucionInicial[module].push_back(nodos[i]);
+    //                 flag = 0;
+    //             }
+    //         }
+    //         else {
+    //             solucionInicial[module].push_back(nodos[i]);
+    //             flag = 0;
+    //         }
+    //         module += 1;
+    //     }
+    // }
 }
 
 /*
@@ -296,30 +300,68 @@ a Sum(Leche*calidad) - Sum(Distancia de nodo a nodo), en caso de que haya Defici
 se entrega una calidad infinitamente negativa.
 */
 
+float determinarCalidad(std::vector<Nodo> recorrido) {
+    int n = (int) recorrido.size();
+    float calidad = 1.0;
+    for( int i = 0; i < n; i++ ) {
+        if ( recorrido[i].tipo == 'B' ) {
+            calidad = 0.7;
+        }
+        else if ( recorrido[i].tipo == 'C' ) {
+            return 0.3;
+        }
+    }
+    return calidad;
+}
+
 float calidadSolucion(std::vector<std::vector<Nodo>> solucion, std::vector<Camion> trucks) {
     float calidad_solucion = 0;
+    float distancia = 0;
     for ( int i = 0; i < totalCamiones; i++ ) {
+        float calidadLeche = 0;
         float lecheRecolectada = 0;
         int index = 0;
         int cantidadNodos = (int) solucion[i].size();
         if ( cantidadNodos > 0) {
-            calidad_solucion -= calcularDistancia(planta[0], solucion[i][index]);
+            distancia -= calcularDistancia(planta[0], solucion[i][index]);
             while ( index != cantidadNodos - 1 ) {
-                calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index],solucion[i][index + 1]);
+                distancia -= calcularDistancia(solucion[i][index],solucion[i][index + 1]);
                 lecheRecolectada += (float) solucion[i][index].cantidad;
                 index++;
             }
-            calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index], planta[0]);
+            distancia -= calcularDistancia(solucion[i][index], planta[0]);
             lecheRecolectada += (float) solucion[i][index].cantidad;
         }
-        if ( lecheRecolectada < (float) leches[i].cuota ) {
-            //return -std::numeric_limits<float>::infinity();
-            calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*.5;
+        calidad_solucion += lecheRecolectada* determinarCalidad(solucion[i]) + distancia;
+        if ( determinarCalidad(solucion[i]) == 0.3 ) {
+            if ( lecheRecolectada < (float) leches[2].cuota ) {
+                calidad_solucion += (lecheRecolectada - leches[2].cuota);
+            }
         }
-        else if ( lecheRecolectada > (float) trucks[i].capacidad ) {
-            //return -std::numeric_limits<float>::infinity();
-            calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*.5;
+        else if ( determinarCalidad(solucion[i]) == 0.7 ) {
+            if ( lecheRecolectada < (float) leches[1].cuota ) {
+                calidad_solucion += (lecheRecolectada - leches[1].cuota);
+            }
         }
+        else {
+            if ( lecheRecolectada < (float) leches[0].cuota ) {
+                calidad_solucion += (lecheRecolectada - leches[0].cuota);
+            }
+        }
+        if ( lecheRecolectada > (float) trucks[i].capacidad ) {
+            calidad_solucion -= (trucks[i].capacidad - lecheRecolectada );
+        }
+
+
+        //
+        // if ( lecheRecolectada < (float) leches[i].cuota ) {
+        //     //return -std::numeric_limits<float>::infinity();
+        //     calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*;
+        // }
+        // else if ( lecheRecolectada > (float) trucks[i].capacidad ) {
+        //     //return -std::numeric_limits<float>::infinity();
+        //     calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*10;
+        // }
     }
     return calidad_solucion;
 }
@@ -390,10 +432,12 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                     for ( int k = j; k < cantidadNodos; k++ ) {
                         std::vector<std::vector<Nodo>> vecino = dosOpt(i, j, k, solucion);
                         solcandidata = calidadSolucion(vecino, camiones);
+                        std::cout << "CANDIDATO " << solcandidata << "\n";
                         if ( solcandidata > solActual ) {
                             solActual = solcandidata;
                             candidato = vecino;
                             change = 1;
+                            std::cout << "NUEVA MEJOR SOLUCION: " << solcandidata << "\n";
                         }
                     }
                     for ( int k = 0; k < totalCamiones; k++) {
@@ -407,6 +451,7 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                                         solActual = solcandidata;
                                         candidato = vecino;
                                         change = 1;
+                                        std::cout << "NUEVA MEJOR SOLUCION: " << solcandidata << "\n";
                                     }
                                 }
                             }
