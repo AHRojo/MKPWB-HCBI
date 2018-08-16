@@ -314,11 +314,11 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion, std::vector<Camio
         }
         if ( lecheRecolectada < (float) leches[i].cuota ) {
             //return -std::numeric_limits<float>::infinity();
-            calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*100;
+            calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*.5;
         }
         else if ( lecheRecolectada > (float) trucks[i].capacidad ) {
             //return -std::numeric_limits<float>::infinity();
-            calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*100;
+            calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*.5;
         }
     }
     return calidad_solucion;
@@ -384,7 +384,7 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     int flag = 1;
     while ( flag == 1 ) {
         int change = 0;
-        for ( int i = 0; i < 3; i++ ) {
+        for ( int i = 0; i < totalCamiones; i++ ) {
             int cantidadNodos = (int) solucion[i].size();
                 for ( int j = 0; j < cantidadNodos; j++ ) {
                     for ( int k = j; k < cantidadNodos; k++ ) {
@@ -472,16 +472,11 @@ void output(std::string s) {
     }
     file << std::to_string(costoViajeT) << "\t" << std::to_string(totalLeche) << "\n";
     //sort camiones
-    std::cout << rutas[0] << "\n" << rutas[1] << "\n" << rutas[2] << "\n\n";
     for ( int i = 0; i < totalCamiones; i++ ) {
         camionesMejorSolucion[i].disponible = camionesMejorSolucion[i].capacidad;
-        std::cout << "cAMBIE UN VALOR\n";
         for ( int j = 0; j < totalCamiones; j++ ) {
-            std::cout << "entre al segundo for\n";
             if ( camionesMejorSolucion[i].capacidad == iniciales[j].capacidad ) {
-                std::cout << "entre al if\n";
                 iter_swap(camionesMejorSolucion.begin() + i, camionesMejorSolucion.begin() + j);
-                std::cout << "cambie camiones de posicion\n";
                 iter_swap(rutas.begin() + i, rutas.begin() + j);
                 iter_swap(costoViaje.begin() + i, costoViaje.begin() + j);
                 iter_swap(cantidadLeche.begin() + i, cantidadLeche.begin() + j);
@@ -490,7 +485,6 @@ void output(std::string s) {
             }
         }
     }
-    std::cout << rutas[0] << "\n" << rutas[1] << "\n" << rutas[2] << "\n";
     for (int i = 0; i < totalCamiones; i++ ) {
         file << rutas[i] << "\t" << std::to_string(costoViaje[i]) << "\t" << std::to_string(cantidadLeche[i]) << leches[i].tipo << "\n";
         }
@@ -530,7 +524,6 @@ int main(int argc, char* argv[]) {
         if ( calidadSolucion(candidato, camiones) > calidadSolucion(mejorSolucion, camionesMejorSolucion) ) {
             mejorSolucion = candidato;
             camionesMejorSolucion = camiones;
-            std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n\n";
             }
         candidato.clear();
         resetCamiones();
