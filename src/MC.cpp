@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <limits>
 #include <ctime>
+#include <iomanip>
 
 #include "nodo.h"
 #include "camion.h"
@@ -95,19 +96,24 @@ float calcularDistancia(Nodo a, Nodo b) {
 }
 
 //Se calcula el ratio Leche/Distancia entre 2 nodos para determinar cual agregar a la solucion greedy
-int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<std::vector<Nodo>> porTipo) {
+int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<Nodo> nodes) {
     int i;
-    int cantidadNodos = (int) porTipo[zona].size();
-    float dist = std::numeric_limits<float>::infinity();
+    int cantidadNodos = (int) nodes.size();
+    float dist = -1;
     int index = 0;
     for ( i = 0; i < cantidadNodos; i++ ) {
-        float actual = calcularDistancia(a, porTipo[zona][i]);
+        float actual = -1;
+        if ( nodes[i].tipo <= leches[zona].tipo ) {
+            actual = calcularDistancia(a, nodes[i]);
+        }
         if ( actual > dist ) {
             dist = actual;
             index = i;
         }
     }
-
+    if ( dist < 0 ) {
+        return -1;
+    }
     return index;
 }
 
@@ -137,19 +143,7 @@ void solucionRandom() {
         int flag = 1;
         while ( flag == 1 ) {
             flag = 1;
-            if ( module == 0 ) {
-                if ( nodos[i].tipo == 'A' ) {
-                    solucionInicial[module].push_back(nodos[i]);
-                    flag = 0;
-                }
-            }
-            else if ( module == 1 ) {
-                if (nodos[i].tipo == 'A' || nodos[i].tipo == 'B' ) {
-                    solucionInicial[module].push_back(nodos[i]);
-                    flag = 0;
-                }
-            }
-            else {
+            if ( nodos[i].tipo <= leches[module].tipo ) {
                 solucionInicial[module].push_back(nodos[i]);
                 flag = 0;
             }
@@ -167,126 +161,25 @@ superior.
 
 */
 void solucionGreedy() {
-    std::vector<std::vector<Nodo>> porTipo;
+    std::vector<Nodo> nodosBorrables;
+    nodosBorrables = nodos;
     int i;
-    int cantidadNodos = (int) nodos.size();
     solucionInicial.clear();
 
-    for ( i = 0; i < totalCamiones + 1; i++ ) {
+    for ( i = 0; i < totalCamiones; i++ ) {
         std::vector<Nodo> lista;
-        porTipo.push_back(lista);
-        if ( i != totalCamiones ) {
-            solucionInicial.push_back(lista);
-        }
+        solucionInicial.push_back(lista);
     }
-
-    for ( i = 0; i < cantidadNodos; i++ ) {
-        if ( nodos[i].tipo == 'A' ) {
-            porTipo[0].push_back(nodos[i]);
-        }
-        else if ( nodos[i].tipo == 'B' ) {
-            porTipo[1].push_back(nodos[i]);
-        }
-        else {
-            porTipo[2].push_back(nodos[i]);
-        }
-    }
-
-
     // int agregados = 0;
     for ( i = 0; i < totalCamiones; i++ ) {
         int indexMasCercano;
+        int cantidadNodos = (int) nodosBorrables.size();
         Nodo actual = planta[0];
-        while ( (int) porTipo[i].size() != 0 && camiones[i].disponible > 0 ) {
-            indexMasCercano = vecinoMasCercanoRatio(actual, i, porTipo);
-            if ( camiones[i].disponible > porTipo[i][indexMasCercano].cantidad ) {
-                solucionInicial[i].push_back(porTipo[i][indexMasCercano]);
-                camiones[i].disponible -= porTipo[i][indexMasCercano].cantidad;
-                // agregados += 1;
-            }
-            else {
-                porTipo[3].push_back(porTipo[i][indexMasCercano]);
-            }
-            porTipo[i].erase(porTipo[i].begin() + indexMasCercano);
-        }
-    }
-
-    //SE agregan los nodos sobrantes
-    int nodosSobrantes = (int) porTipo[3].size();
-    for ( i = 0; i < nodosSobrantes; i++ ) {
-        if ( porTipo[3][i].tipo == 'A' ) {
-            if ( camiones[0].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[0].insert(solucionInicial[0].begin(), porTipo[3][i]);
-                camiones[0].disponible -= porTipo[3][i].cantidad;
-
-            }
-            else if ( camiones[1].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[1].insert(solucionInicial[1].begin(), porTipo[3][i]);
-                camiones[1].disponible -= porTipo[3][i].cantidad;
-            }
-            else if ( camiones[2].disponible > porTipo[3][i].cantidad ){
-                solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
-                camiones[2].disponible -= porTipo[3][i].cantidad;
-            }
-        }
-        else if ( porTipo[3][i].tipo == 'B' ) {
-            if ( camiones[1].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[1].insert(solucionInicial[1].begin(), porTipo[3][i]);
-                camiones[1].disponible -= porTipo[3][i].cantidad;
-            }
-            else if ( camiones[2].disponible > porTipo[3][i].cantidad ){
-                solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
-                camiones[2].disponible -= porTipo[3][i].cantidad;
-            }
-        }
-        else{
-            if ( camiones[2].disponible > porTipo[3][i].cantidad ) {
-                solucionInicial[2].insert(solucionInicial[2].begin(), porTipo[3][i]);
-                camiones[2].disponible -= porTipo[3][i].cantidad;
-            }
-        }
-    }
-
-
-    //Se solucionan los problemas de Deficit
-
-    for ( i = 0; i < totalCamiones; i++ ) {
-        if ( calcularDeficit(i, solucionInicial) > 0 ) {
-            if ( i == 1 ) {
-                for ( int j = (int) solucionInicial[0].size() - 1; j >= 0; j-- ) {
-                    if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) < 0) {
-                        if ( camiones[1].disponible > solucionInicial[0][j].cantidad ) {
-                            camiones[1].disponible -= solucionInicial[0][j].cantidad;
-                            camiones[0].disponible += solucionInicial[1][j].cantidad;
-                            solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[0][j]);
-                            solucionInicial[0].erase(solucionInicial[0].begin() + j);
-                        }
-                    }
-                }
-            }
-            else if ( i == 2 ) {
-                for ( int j = (int) solucionInicial[1].size() - 1; j >= 0; j-- ) {
-                    if ( (calcularDeficit(1, solucionInicial) + solucionInicial[1][j].cantidad) < 0) {
-                        if ( camiones[2].disponible > solucionInicial[1][j].cantidad ) {
-                            camiones[2].disponible -= solucionInicial[1][j].cantidad;
-                            camiones[1].disponible += solucionInicial[1][j].cantidad;
-                            solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[1][j]);
-                            solucionInicial[1].erase(solucionInicial[1].begin() + j);
-                        }
-
-                    }
-                }
-                for ( int j = (int) solucionInicial[0].size() - 1; j >= 0; j-- ) {
-                    if ( (calcularDeficit(0, solucionInicial) + solucionInicial[0][j].cantidad) < 0) {
-                        if ( camiones[2].disponible > solucionInicial[0][j].cantidad ) {
-                            camiones[2].disponible -= solucionInicial[0][j].cantidad;
-                            camiones[0].disponible += solucionInicial[0][j].cantidad;
-                            solucionInicial[i].insert(solucionInicial[i].begin(), solucionInicial[0][j]);
-                            solucionInicial[0].erase(solucionInicial[0].begin() + j);
-                        }
-
-                    }
-                }
+        for ( int j = 0; j < cantidadNodos; j++ ) {
+            indexMasCercano = vecinoMasCercanoRatio(actual, i, nodosBorrables);
+            if ( indexMasCercano >= 0 ) {
+                solucionInicial[i].push_back(nodosBorrables[indexMasCercano]);
+                nodosBorrables.erase(nodosBorrables.begin() + indexMasCercano);
             }
         }
     }
@@ -376,20 +269,7 @@ std::vector<std::vector<Nodo>> swapNodes(int i, int j, int a, int b, std::vector
 }
 
 int permitirTake(Nodo a, Nodo b) {
-    if (a.tipo == 'A' ) {
-        if ( b.tipo == 'A') {
-            return 1;
-        }
-    }
-    else if ( a.tipo == 'B' ) {
-        if ( b.tipo == 'A') {
-            return 1;
-        }
-        if (b.tipo == 'B') {
-            return 1;
-        }
-    }
-    else if ( a.tipo == 'C' ) {
+    if ( a.tipo >= b.tipo ) {
         return 1;
     }
     return 0;
@@ -458,8 +338,9 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     return solucion;
 }
 
-void resetCamiones() {
-    std::random_shuffle (camiones.begin(), camiones.end());
+void reset() {
+    std::random_shuffle ( nodos.begin(), nodos.end() );
+    std::random_shuffle ( camiones.begin(), camiones.end() );
     for ( int i = 0; i < totalCamiones; i++ ) {
         camiones[i].disponible = camiones[i].capacidad;
     }
@@ -474,7 +355,7 @@ void output(std::string s) {
         std::cout << "No se pudo crear el archivo.";
         return;
     }
-    file << std::to_string(calidadSolucion(mejorSolucion, camionesMejorSolucion)) << "\t";
+    file << std::left << round(calidadSolucion(mejorSolucion, camionesMejorSolucion)*10)/10 << "\t";
     //Costo total
     std::vector<std::string> rutas;
     std::vector<float> costoViaje;
@@ -486,17 +367,17 @@ void output(std::string s) {
         int cantidadNodos = (int) mejorSolucion[i].size();
         if (cantidadNodos != 0) {
             costoViaje[i] += calcularDistancia(planta[0], mejorSolucion[i][0])*PDISTANCIA;
-        }
-        int index = 0;
-        while ( index != cantidadNodos - 1 && cantidadNodos != 0 ) {
-            rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-";
+            int index = 0;
+            while ( index != cantidadNodos - 1 && cantidadNodos != 0 ) {
+                rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-";
+                cantidadLeche[i] += (float) mejorSolucion[i][index].cantidad;
+                costoViaje[i] += calcularDistancia(mejorSolucion[i][index], mejorSolucion[i][index])*PDISTANCIA;
+                index++;
+            }
+            rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-1";
             cantidadLeche[i] += (float) mejorSolucion[i][index].cantidad;
-            costoViaje[i] += calcularDistancia(mejorSolucion[i][index], mejorSolucion[i][index])*PDISTANCIA;
-            index++;
+            costoViaje[i] += calcularDistancia(mejorSolucion[i][index], planta[0])*PDISTANCIA;
         }
-        rutas[i] += std::to_string(mejorSolucion[i][index].id) + "-1";
-        cantidadLeche[i] += (float) mejorSolucion[i][index].cantidad;
-        costoViaje[i] += calcularDistancia(mejorSolucion[i][index], planta[0])*PDISTANCIA;
     }
     float totalLeche = 0;
     float costoViajeT = 0;
@@ -504,7 +385,7 @@ void output(std::string s) {
         totalLeche += (float) cantidadLeche[i]*leches[i].valor;
         costoViajeT += costoViaje[i];
     }
-    file << std::to_string(costoViajeT) << "\t" << std::to_string(totalLeche) << "\n";
+    file << std::left << round(costoViajeT*10)/10 << "\t" << round(totalLeche) << "\n";
     //sort camiones
     for ( int i = 0; i < totalCamiones; i++ ) {
         camionesMejorSolucion[i].disponible = camionesMejorSolucion[i].capacidad;
@@ -520,7 +401,7 @@ void output(std::string s) {
         }
     }
     for (int i = 0; i < totalCamiones; i++ ) {
-        file << rutas[i] << "\t" << std::to_string(costoViaje[i]) << "\t" << std::to_string(cantidadLeche[i]) << leches[i].tipo << "\n";
+        file << std::left << std::setw(40) << rutas[i] << "\t" << round(costoViaje[i]*10)/10 << "\t" << round(cantidadLeche[i]) << leches[i].tipo << "\n";
         }
 
 
@@ -535,12 +416,12 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<Nodo>> candidato;
     int r;
     std::cout << "Amplificacion de distancia (recomendado 10-30): ";
+    readFile(argv[1]);
     std::cin >> PDISTANCIA;
     std::cout << "Amplificacion de penalizacion de capacidad: ";
     std::cin >> PCAPACIDAD;
     std::cout << "Amplificacion de penalizacion de cuota: ";
     std::cin >> PCUOTA;
-    readFile(argv[1]);
     std::cout << "1 solucion greedy, cualquier otro solucion semi random: ";
     std::cin >> sol;
     if ( sol != 1 ) {
@@ -563,10 +444,9 @@ int main(int argc, char* argv[]) {
         if ( calidadSolucion(candidato, camiones) > calidadSolucion(mejorSolucion, camionesMejorSolucion) ) {
             mejorSolucion = candidato;
             camionesMejorSolucion = camiones;
-            std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n\n";
             }
         candidato.clear();
-        resetCamiones();
+        reset();
         if ( sol == 1 ) {
             solucionGreedy();
         }
