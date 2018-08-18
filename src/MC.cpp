@@ -13,9 +13,9 @@
 #include "camion.h"
 #include "leche.h"
 
-float PDISTANCIA;
-float PCAPACIDAD;
-float PCUOTA;
+float PDISTANCIA = 1.0;
+float PCAPACIDAD = 1.0;
+float PCUOTA = 1.0;
 
 std::vector<Camion> camiones;
 std::vector<Camion> camionesMejorSolucion;
@@ -415,13 +415,7 @@ int main(int argc, char* argv[]) {
         }
     std::vector<std::vector<Nodo>> candidato;
     int r;
-    std::cout << "Amplificacion de distancia (recomendado 10-30): ";
     readFile(argv[1]);
-    std::cin >> PDISTANCIA;
-    std::cout << "Amplificacion de penalizacion de capacidad: ";
-    std::cin >> PCAPACIDAD;
-    std::cout << "Amplificacion de penalizacion de cuota: ";
-    std::cin >> PCUOTA;
     std::cout << "1 solucion greedy, cualquier otro solucion semi random: ";
     std::cin >> sol;
     if ( sol != 1 ) {
