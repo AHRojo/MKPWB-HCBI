@@ -416,6 +416,10 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<Nodo>> candidato;
     int r;
     readFile(argv[1]);
+    // std::cout << "Capacidad: ";
+    // std::cin >> PCAPACIDAD;
+    // std::cout << "Cuota: ";
+    // std::cin >> PCUOTA;
     std::cout << "1 solucion greedy, cualquier otro solucion semi random: ";
     std::cin >> sol;
     if ( sol != 1 ) {
@@ -458,7 +462,7 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "\n\n";
     }
-    std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n\n";
+    std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n";
     std::cout << "tiempo: " << (double)(stop_s-start_s)/double(CLOCKS_PER_SEC) << "segundos\n";
     output(argv[1]);
 
