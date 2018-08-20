@@ -13,6 +13,9 @@
 #include "camion.h"
 #include "leche.h"
 
+/*
+Factores para penalización de capacidad y cuota y magnitud de la distancia
+*/
 float PDISTANCIA = 1.0;
 float PCAPACIDAD = 1.0;
 float PCUOTA = 1.0;
@@ -95,7 +98,8 @@ float calcularDistancia(Nodo a, Nodo b) {
     return (float) sqrt(i+j);
 }
 
-//Se calcula el ratio Leche/Distancia entre 2 nodos para determinar cual agregar a la solucion greedy
+//Se calcula el ratio Leche/Distancia entre 2 nodos para determinar cual agregar a la solucion greedy,
+//Se compara ademas si los nodos son factibles para ingresar a la ruta de un camion, si cumple con la calidad de leche
 int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<Nodo> nodes) {
     int i;
     int cantidadNodos = (int) nodes.size();
@@ -117,18 +121,6 @@ int vecinoMasCercanoRatio(Nodo a, int zona, std::vector<Nodo> nodes) {
     return index;
 }
 
-//i es el camion que se esta evaluando
-//Se utiliza para determinar si existe un deficit de leche en algun camion
-//para cumplir la cuota, si entrega un numero negativo quiere decir que hay de sobra.
-int calcularDeficit(int i, std::vector<std::vector<Nodo>> solucion) {
-    int n = (int) solucion[i].size();
-    int total = 0;
-    for ( int j = 0; j < n; j++ ) {
-        total += solucion[i][j].cantidad;
-    }
-    return leches[i].cuota - total;
-}
-
 void solucionRandom() {
     int cantidadNodos = (int) nodos.size();
     solucionInicial.clear();
@@ -136,14 +128,14 @@ void solucionRandom() {
         std::vector<Nodo> lista;
         solucionInicial.push_back(lista);
     }
-    std::random_shuffle (nodos.begin(), nodos.end());
+    std::random_shuffle (nodos.begin(), nodos.end()); //Se barajan los nodos
     int module;
-    for ( int i = 0; i < cantidadNodos; i++ ) {
+    for ( int i = 0; i < cantidadNodos; i++ ) { //Se agregan los nodos a distintos camiones, si es que se permite
         module = i%totalCamiones;
         int flag = 1;
         while ( flag == 1 ) {
             flag = 1;
-            if ( nodos[i].tipo <= leches[module].tipo ) {
+            if ( nodos[i].tipo <= leches[module].tipo ) { //Se compara si la calidad de leche es igual o supera la que lleva
                 solucionInicial[module].push_back(nodos[i]);
                 flag = 0;
             }
@@ -153,29 +145,26 @@ void solucionRandom() {
 }
 
 /*
-Si distibuyen los tipos de leche entre los camiones, el camion 1 recolecta leche tipo A
-el 2 B y el 3 C, los nodos sobrantes (cuando se supera la capacidad maxima se agregan a otros camiones que
-no cambien la calidad de la leche)
-Finalmente se reparan los problemas de deficit extrayendo leche de otros camiones con calidad de leche
-superior.
-
+Se distibuyen los tipos de leche entre los camiones, el camion 1 recolecta leche tipo A
+el 2 B y el 3 C
 */
 void solucionGreedy() {
     std::vector<Nodo> nodosBorrables;
     nodosBorrables = nodos;
     int i;
     solucionInicial.clear();
-
+    //Se agregan tantos vectores como camiones haya a la solucion.
     for ( i = 0; i < totalCamiones; i++ ) {
         std::vector<Nodo> lista;
         solucionInicial.push_back(lista);
     }
-    // int agregados = 0;
+    //Se agregan los nodos a las rutas
     for ( i = 0; i < totalCamiones; i++ ) {
         int indexMasCercano;
         int cantidadNodos = (int) nodosBorrables.size();
         Nodo actual = planta[0];
         for ( int j = 0; j < cantidadNodos; j++ ) {
+            //Se determina el vecino con el mejor ratio leche/distancia
             indexMasCercano = vecinoMasCercanoRatio(actual, i, nodosBorrables);
             if ( indexMasCercano >= 0 ) {
                 solucionInicial[i].push_back(nodosBorrables[indexMasCercano]);
@@ -200,21 +189,23 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion, std::vector<Camio
         int index = 0;
         int cantidadNodos = (int) solucion[i].size();
         if ( cantidadNodos > 0) {
+            //Se calcula la distancia desde la planta al primer nodo.
             calidad_solucion -= calcularDistancia(planta[0], solucion[i][index])*PDISTANCIA;
             while ( index != cantidadNodos - 1 ) {
+                //Se agregan las cantidades de leche de los nodos y se restan sus distancias, excepto el ultimo
                 calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index],solucion[i][index + 1])*PDISTANCIA;
                 lecheRecolectada += (float) solucion[i][index].cantidad;
                 index++;
             }
+            //aca se calcula el ultimo
             calidad_solucion += (float) solucion[i][index].cantidad * (float) leches[i].valor - calcularDistancia(solucion[i][index], planta[0])*PDISTANCIA;
             lecheRecolectada += (float) solucion[i][index].cantidad;
         }
+        //Se penaliza el deficit de cuota y el exceso de capacidad
         if ( lecheRecolectada < (float) leches[i].cuota ) {
-            //return -std::numeric_limits<float>::infinity();
             calidad_solucion += (lecheRecolectada - (float) leches[i].cuota)*PCUOTA;
         }
         else if ( lecheRecolectada > (float) trucks[i].capacidad ) {
-            //return -std::numeric_limits<float>::infinity();
             calidad_solucion += ( (float) trucks[i].capacidad - lecheRecolectada)*PCAPACIDAD;
         }
     }
@@ -223,7 +214,6 @@ float calidadSolucion(std::vector<std::vector<Nodo>> solucion, std::vector<Camio
 // recorrido en el que estoy, a, b arcos que voy a cambiar y el recorrido.
 //Movimiento realizado en el caso corresponde a 2opt.
 std::vector<std::vector<Nodo>> dosOpt(int i, int a, int b, std::vector<std::vector<Nodo>> recorrido) {
-    //std::reverse(recorrido[i][a], recorrido[i][b]);
     std::vector<Nodo> cambio;
     int c;
     int cantidadNodos = (int) recorrido[i].size();
@@ -240,7 +230,9 @@ std::vector<std::vector<Nodo>> dosOpt(int i, int a, int b, std::vector<std::vect
     return recorrido;
 }
 
-// parametros recorrido en el que estoy, recorrido al que le voy a robar, posicion en la que voy a agregar, posicion a la que le voy a robar, y la representacion.
+// parametros recorrido en el que estoy, recorrido al que le voy a robar,
+//posicion en la que voy a agregar, posicion a la que le voy a robar, y la
+//representacion.
 /*
 La funcion toma un nodo de otro camion que lleve calidad mayor y la agrega en
 una posicion a del vector que solicita nodos.
@@ -254,6 +246,7 @@ std::vector<std::vector<Nodo>> takeNode(int i, int j, int a, int b, std::vector<
     return recorrido;
 }
 
+//Se intercambian los nodos a y b de los camiones i y j.
 std::vector<std::vector<Nodo>> swapNodes(int i, int j, int a, int b, std::vector<std::vector<Nodo>> recorrido) {
     std::vector<Nodo>::iterator it = recorrido[i].begin();
     std::vector<Nodo>::iterator ot = recorrido[j].begin();
@@ -268,6 +261,7 @@ std::vector<std::vector<Nodo>> swapNodes(int i, int j, int a, int b, std::vector
     return recorrido;
 }
 
+//Se compara si la leche no arruina la calidad de la leche de otro camión.
 int permitirTake(Nodo a, Nodo b) {
     if ( a.tipo >= b.tipo ) {
         return 1;
@@ -275,6 +269,7 @@ int permitirTake(Nodo a, Nodo b) {
     return 0;
 }
 
+//Se revisa si al realizar un swap no se arruinan calidades de leche.
 int permitirSwap(Nodo a, Nodo b) {
     if ( a.tipo == b.tipo ) {
         return 1;
@@ -282,29 +277,36 @@ int permitirSwap(Nodo a, Nodo b) {
     return 0;
 }
 
+//Algoritmo principal de hill climbing
 std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     std::vector<std::vector<Nodo>> candidato;
     float solcandidata;
     float solActual = calidadSolucion(solucion, camiones);
     int flag = 1;
+    //Se repite el proceso hasta que no se encuentre un mejor vecino que el actual
     while ( flag == 1 ) {
         int change = 0;
+        //Se recorren todos los camiones
         for ( int i = 0; i < 3; i++ ) {
             int cantidadNodos = (int) solucion[i].size();
                 for ( int j = 0; j < cantidadNodos; j++ ) {
                     for ( int k = j; k < cantidadNodos; k++ ) {
+                        //Se realizan movimientos 2opt entre los nodos de un mismo camion
                         std::vector<std::vector<Nodo>> vecino = dosOpt(i, j, k, solucion);
                         solcandidata = calidadSolucion(vecino, camiones);
+                        //Se revisa si el nuevo vecino es mejor que el mejor candidato actual
                         if ( solcandidata > solActual ) {
                             solActual = solcandidata;
                             candidato = vecino;
                             change = 1;
                         }
                     }
+                    //Se recorren los otros camiones
                     for ( int k = 0; k < totalCamiones; k++) {
                         int cantidadNodosOtros = (int) solucion[k].size();
                         if ( i != k ) {
                             for ( int l = 0; l < cantidadNodosOtros; l++ ) {
+                                //Se compara si es posible robar un nodo a otro camion
                                 if ( permitirTake (solucion[i][j], solucion[k][l]) == 1 ) {
                                     std::vector<std::vector<Nodo>> vecino = takeNode(i, k, j, l, solucion);
                                     solcandidata = calidadSolucion(vecino, camiones);
@@ -314,6 +316,7 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                                         change = 1;
                                     }
                                 }
+                                //Se revisa si es posible realizar un swap
                                 if ( permitirSwap (solucion[i][j], solucion[k][l]) == 1 ) {
                                     std::vector<std::vector<Nodo>> vecino = swapNodes(i, k, j, l, solucion);
                                     solcandidata = calidadSolucion(vecino, camiones);
@@ -328,9 +331,12 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
                     }
                 }
             }
+        //Si change = 0, significa que no existe un vecino con mejor calidad,
+        //si change = 1, se mueve hacia el vecino y se repite el proceso.
         if ( change == 1 ) {
             solucion = candidato;
         }
+        //Si no hubo mejor candidato se detiene el loop.
         else {
             flag = 0;
         }
@@ -338,6 +344,8 @@ std::vector<std::vector<Nodo>> HCBI(std::vector<std::vector<Nodo>> solucion) {
     return solucion;
 }
 
+//reset, se barajan los nodos y el orden de los camiones
+//por mala implementación es necesario barajar los camiones e.e
 void reset() {
     std::random_shuffle ( nodos.begin(), nodos.end() );
     std::random_shuffle ( camiones.begin(), camiones.end() );
@@ -346,6 +354,9 @@ void reset() {
     }
 }
 
+//Escritura en archivo .out
+//Nada interesante es calcular la calidad de la solución por camiones separados
+//Y escribir
 void output(std::string s) {
     int asd = 0;
     asd = (int) s.find(".txt", asd);
@@ -356,7 +367,6 @@ void output(std::string s) {
         return;
     }
     file << std::left << round(calidadSolucion(mejorSolucion, camionesMejorSolucion)*10)/10 << "\t";
-    //Costo total
     std::vector<std::string> rutas;
     std::vector<float> costoViaje;
     std::vector<float> cantidadLeche;
@@ -386,7 +396,6 @@ void output(std::string s) {
         costoViajeT += costoViaje[i];
     }
     file << std::left << round(costoViajeT*10)/10 << "\t" << round(totalLeche) << "\n";
-    //sort camiones
     for ( int i = 0; i < totalCamiones; i++ ) {
         camionesMejorSolucion[i].disponible = camionesMejorSolucion[i].capacidad;
         for ( int j = 0; j < totalCamiones; j++ ) {
@@ -403,8 +412,6 @@ void output(std::string s) {
     for (int i = 0; i < totalCamiones; i++ ) {
         file << std::left << std::setw(40) << rutas[i] << "\t" << round(costoViaje[i]*10)/10 << "\t" << round(cantidadLeche[i]) << leches[i].tipo << "\n";
         }
-
-
     file.close();
 }
 
@@ -416,6 +423,9 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<Nodo>> candidato;
     int r;
     readFile(argv[1]);
+    /*
+    Si se descomenta esto al ejecutar el programa es posible cambiar el factor de penalizacion.
+    */
     // std::cout << "Capacidad: ";
     // std::cin >> PCAPACIDAD;
     // std::cout << "Cuota: ";
@@ -429,7 +439,7 @@ int main(int argc, char* argv[]) {
     clock_t start_s=clock();
     if ( sol == 1 ) {
         solucionGreedy();
-        r = 9;
+        r = 9; //como implemente mal los camiones tengo que hacer estos restart e.e para cambiar que camion lleva que.
     }
     else {
         solucionRandom();
@@ -437,11 +447,14 @@ int main(int argc, char* argv[]) {
     mejorSolucion = solucionInicial;
     camionesMejorSolucion = camiones;
     candidato = mejorSolucion;
+    //restarts
     for ( int i = 0; i < r; i++ ) {
+        //se realiza HCBI
         candidato = HCBI(solucionInicial);
+        //Si la calidad de la nueva solucion es mejor que la mejor solucion se reemplaza
         if ( calidadSolucion(candidato, camiones) > calidadSolucion(mejorSolucion, camionesMejorSolucion) ) {
             mejorSolucion = candidato;
-            camionesMejorSolucion = camiones;
+            camionesMejorSolucion = camiones; //como implemente mal los camiones tambien tengo que guardarlos asi e.e
             }
         candidato.clear();
         reset();
@@ -453,7 +466,7 @@ int main(int argc, char* argv[]) {
         }
     }
     int stop_s=(int) clock();
-
+    //se muestra la solucion por terminal
     for ( int i = 0; i < 3; i++ ) {
         int alo = (int) mejorSolucion[i].size();
         std::cout << "Camion" << i << "\n";
@@ -464,9 +477,8 @@ int main(int argc, char* argv[]) {
     }
     std::cout << calidadSolucion(mejorSolucion, camionesMejorSolucion) << "\n";
     std::cout << "tiempo: " << (double)(stop_s-start_s)/double(CLOCKS_PER_SEC) << "segundos\n";
+    //Se escribe en output.
     output(argv[1]);
-
-
 
     return 0;
 }
