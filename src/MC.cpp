@@ -93,9 +93,9 @@ void readFile(std::string arch) {
 float calcularDistancia(Nodo a, Nodo b) {
     float i = a.x - b.x;
     float j = a.y - b.y;
-    i = (float) pow(i, 2);
-    j = (float) pow(j, 2);
-    return (float) sqrt(i+j);
+    i = (float) std::pow(i, 2);
+    j = (float) std::pow(j, 2);
+    return (float) std::sqrt(i+j);
 }
 
 //Se calcula el ratio Leche/Distancia entre 2 nodos para determinar cual agregar a la solucion greedy,
@@ -366,7 +366,7 @@ void output(std::string s) {
         std::cout << "No se pudo crear el archivo.";
         return;
     }
-    file << std::left << round(calidadSolucion(mejorSolucion, camionesMejorSolucion)*10)/10 << "\t";
+    file << std::left << std::round(calidadSolucion(mejorSolucion, camionesMejorSolucion)*10)/10 << "\t";
     std::vector<std::string> rutas;
     std::vector<float> costoViaje;
     std::vector<float> cantidadLeche;
@@ -410,7 +410,7 @@ void output(std::string s) {
         }
     }
     for (int i = 0; i < totalCamiones; i++ ) {
-        file << std::left << std::setw(40) << rutas[i] << "\t" << round(costoViaje[i]*10)/10 << "\t" << round(cantidadLeche[i]) << leches[i].tipo << "\n";
+        file << std::left << std::setw(40) << rutas[i] << "\t" << std::round(costoViaje[i]*10)/10 << "\t" << std::round(cantidadLeche[i]) << leches[i].tipo << "\n";
         }
     file.close();
 }
